@@ -1,0 +1,10 @@
+name: drugviz
+title:
+username:
+account: patterja-brite
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 215212
+bundleId: 983983
+url: https://patterja-brite.shinyapps.io/drugviz/
+when: 1505512611.71344

@@ -105,9 +105,29 @@ output$scatter <- renderPlot({
           panel.grid.major.x = element_line( size=.1, color="gray" ), 
           legend.position="bottom") +
     scale_colour_brewer(palette = "Dark2") +
-    labs(y="AAC", x="cell lines\nordered by increasing DUOX1 expression") +
+    labs(y="AAC", x=paste0("cell lines\nordered by increasing ", toupper(input$SortByGeneExp))) +
     ylim(0, 0.3)
   print(erlo_scatter)
 })
 
-}
+
+output$report <- renderImage({
+  outfile <- tempfile(fileext = '.png')
+  png(outfile, width = 400, height = 300)
+  #pdf("report.pdf")
+  #output$scatter
+  #dev.off()
+})
+      
+    
+    # Set up parameters to pass to Rmd document
+    #params <- list(n = input$slider)
+    
+    # Knit the document, passing in the `params` list, and eval it in a
+    # child of the global environment (this isolates the code in the document
+    # from the code in this app).
+    #rmarkdown::render(tempReport, output_file = file,
+    #                  params = params,
+    #                  envir = new.env(parent = globalenv())
+    #)
+  }

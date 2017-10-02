@@ -1,0 +1,139 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+#http://tanlab.ucdenver.edu/QAPC/
+
+```{r, echo=FALSE, echo=FALSE}
+library(data.table)
+library(ggplot2)
+library(PharmacoGx)
+
+
+
+#homogenizes cell line names and removes duplicates
+processSummSensPset <- function(df) {
+  df2 = as.data.frame(t(data.frame(df)))
+  df2$cell_line = gsub("—|-| |_|\\.","", rownames(df2))
+  print(paste0("duplicated rows ", df2[duplicated(df2$cell_line),]))
+  df2[-duplicated(df2$cell_line),]
+  return(df2)
+}
+
+
+```
+
+#DRUG Sensitivity
+
+```{r read in pharmaco data, echo=FALSE}
+availablePSets()
+pharm_ccle2013=downloadPSet("CCLE_2013")
+pharm_ccle = downloadPSet("CCLE")
+pharm_gdsc = downloadPSet("GDSC")
+pharm_gdsc2013 = downloadPSet("GDSC_2013")
+pharm_gdsc1000 = downloadPSet("GDSC1000")
+pharm_gcsi=downloadPSet("gCSI")
+pharm_fimm=downloadPSet("FIMM")
+pharm_ctrpv2=downloadPSet("CTRPv2")
+
+common <- intersectPSet(list('CCLE'=pharm_ccle,'GDSC'=pharm_gdsc),intersectOn=c("cell.lines", "drugs"), strictIntersect=TRUE)
+commonGenes <- intersect(fNames(GDSCsmall, "rna"), fNames(CCLEsmall,"rna"))
+
+
+
+pharm_ccle2013_reauc = summarizeSensitivityProfiles(pSet = pharm_ccle2013, sensitivity.measure = 'auc_published', summary.stat = "median", verbose=T, drugs=c("Erlotinib", "Afatinib"))
+pharm_ccle_reauc = summarizeSensitivityProfiles(pSet = pharm_ccle, sensitivity.measure = 'auc_recomputed', summary.stat = "median", verbose=T, drugs=c("Erlotinib", "Afatinib"))
+pharm_gdsc_reauc = summarizeSensitivityProfiles(pSet = pharm_gdsc, sensitivity.measure = 'auc_recomputed', summary.stat = "median", verbose=T, drugs=c("Erlotinib", "Afatinib"))
+pharm_gdsc2013_reauc = summarizeSensitivityProfiles(pSet = pharm_gdsc2013, sensitivity.measure = 'auc_published', summary.stat = "median", verbose=T, drugs=c("Erlotinib", "Afatinib"))
+pharm_gdsc1000_reauc = summarizeSensitivityProfiles(pSet = pharm_gdsc1000, sensitivity.measure = 'auc_recomputed', summary.stat = "median", verbose=T, drugs=c("Erlotinib", "Afatinib"))
+pharm_gcsi_reauc = summarizeSensitivityProfiles(pSet = pharm_gcsi, sensitivity.measure = 'auc_recomputed', summary.stat = "median", verbose=T, drugs=c("Erlotinib", "Afatinib"))
+pharm_fim_reauc = summarizeSensitivityProfiles(pSet = pharm_fimm, sensitivity.measure = 'auc_recomputed', summary.stat = "median", verbose=T, drugs=c("Erlotinib", "Afatinib"))
+#ctrp will take a lifetime to summarize. beware.
+pharm_ctrp_reauc = summarizeSensitivityProfiles(pSet = pharm_ctrpv2, sensitivity.measure = 'auc_recomputed', summary.stat = "median", verbose=T, drugs=c("Erlotinib", "Afatinib"))
+
+ccle_auc = processSummSensPset(pharm_ccle_reauc)
+gdsc_auc = processSummSensPset(pharm_gdsc_reauc)
+gdsc1000_auc = processSummSensPset(pharm_gdsc1000_reauc)
+gcsi_auc = processSummSensPset(pharm_gcsi_reauc)
+fimm_auc = processSummSensPset(pharm_fim_reauc)
+ctrpv2_auc = processSummSensPset(pharm_ctrp_reauc)
+
+
+auc_erlo = Reduce(function(x, y) merge(x, y, by="cell_line", all=TRUE), list(ccle_auc[,c(1,3)], gdsc_auc[,c(1,3)], gdsc1000_auc[,c(1,3)], gcsi_auc[,c(1,3)], fimm_auc[,c(1,3)], ctrpv2_auc[,c(1,3)]))
+colnames(auc_erlo) = c("cell_line", "CCLE", "GDSC","GDSC1000", "GCSI", "FIMM", "CTRPV2")
+
+auc_afat = Reduce(function(x, y) merge(x, y, by="cell_line", all=TRUE), list(ccle_auc[,c(2,3)], gdsc_auc[,c(2,3)], gdsc1000_auc[,c(2,3)], gcsi_auc[,c(2,3)], fimm_auc[,c(2,3)], ctrpv2_auc[,c(2,3)]))
+colnames(auc_afat) = c("cell_line", "CCLE", "GDSC","GDSC1000", "GCSI", "FIMM", "CTRPV2")
+
+
+
+```
+
+```{r}
+
+data("GDSCsmall")
+data("CCLEsmall")
+commonGenes <- intersect(fNames(GDSCsmall, "rna"), fNames(CCLEsmall,"rna"))
+common <- intersectPSet(list('CCLE'=CCLEsmall,'GDSC'=GDSCsmall),intersectOn=c("cell.lines", "drugs"), strictIntersect=TRUE)
+
+GDSC.auc <- summarizeSensitivityProfiles(
+  pSet=common$GDSC,
+  sensitivity.measure='auc_published',
+  summary.stat="median",
+  verbose=FALSE)
+
+CCLE.auc <- summarizeSensitivityProfiles(
+  pSet=common$CCLE,
+  sensitivity.measure='auc_published',
+  summary.stat="median",
+  verbose=FALSE)
+
+
+GDSC.ic50 <- summarizeSensitivityProfiles(
+  pSet=common$GDSC,
+  sensitivity.measure='ic50_published',
+  summary.stat="median",
+  verbose=FALSE)
+
+CCLE.ic50 <- summarizeSensitivityProfiles(
+  pSet=common$CCLE,
+  sensitivity.measure='ic50_published',
+  summary.stat="median",
+  verbose=FALSE)
+
+GDSCexpression <- summarizeMolecularProfiles(common$GDSC,
+                                             cellNames(common$GDSC),
+                                             mDataType="rna",
+                                             features=commonGenes,
+                                             verbose=FALSE)
+
+CCLEexpression <- summarizeMolecularProfiles(common$CCLE,
+                                             cellNames(common$CCLE),
+                                             mDataType="rna",
+                                             features=commonGenes,
+                                             verbose=FALSE)
+
+gg <- fNames(common[[1]], 'rna')
+cc <- cellNames(common[[1]])
+ge.cor <- sapply(cc, function (x, d1, d2) {
+  return (stats::cor(d1[ , x], d2[ , x], method="spearman",
+                     use="pairwise.complete.obs"))}, d1=exprs(GDSCexpression), d2=exprs(CCLEexpression))
+
+ic50.cor <- sapply(cc, function (x, d1, d2) {
+  return (stats::cor(d1[, x], d2[ , x], method="spearman",
+                     use="pairwise.complete.obs"))}, d1=GDSC.ic50, d2=CCLE.ic50)
+
+auc.cor <- sapply(cc, function (x, d1, d2) {
+  return (stats::cor(d1[ , x], d2[ , x], method="spearman",
+                     use="pairwise.complete.obs"))}, d1=GDSC.auc, d2=CCLE.auc)
+
+w1 <- stats::wilcox.test(x=ge.cor, y=auc.cor,
+                         conf.int=TRUE, exact=FALSE)
+
+w2 <- stats::wilcox.test(x=ge.cor, y=ic50.cor,
+                         conf.int=TRUE, exact=FALSE)
+ 
+yylim <- c(-1, 1)
+ss <- sprintf("GE vs. AUC = %.1E\nGE vs. IC50 = %.1E", w1$p.value, w2$p.value)
+
+```

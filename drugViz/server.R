@@ -111,13 +111,13 @@ output$scatter <- renderPlot({
 })
 
 
-output$report <- renderImage({
-  outfile <- tempfile(fileext = '.png')
-  png(outfile, width = 400, height = 300)
+#output$report <- renderImage({
+#  outfile <- tempfile(fileext = '.png')
+#  png(outfile, width = 400, height = 300)
   #pdf("report.pdf")
   #output$scatter
   #dev.off()
-})
+#})
       
     
     # Set up parameters to pass to Rmd document

@@ -2,6 +2,7 @@ server <- function(input, output) {
 
   
 duoxexp_filt = exp89[exp89$cellline %in% auc_erlo$cell_line,]
+duoxexp_filt = unique(duoxexp_filt)
 duox_order = duoxexp_filt$cellline[c(order(duoxexp_filt$median_duox))]
 
 #filter egfr and sensitivities inside duox list

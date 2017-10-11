@@ -17,7 +17,7 @@ med=apply(aucerlo_study[,c(2:ncol(aucerlo_study))], 1, medianWithoutNA)
 # Fixed above by just sorting by median of all sensitivities combined and not the study filtered median
 sens_order <-reactive({
   aucErlo_filt = aucerlo_study[,append(c("cell_line"), input$celllines)]
-  medianSens = apply(aucErlo_filt[,c(2:ncol(aucErlo_filt))], 1, medianWithoutNA)
+  medianSens = apply(aucErlo_filt[,c(2:ncol(aucErlo_filt)),drop=F], 1, medianWithoutNA)
   neworder = c(aucErlo_filt$cell_line[order(medianSens)])
   neworder
   print(neworder)
@@ -98,7 +98,7 @@ output$scatter <- renderPlot({
   aucErlo_filt$cell_line = factor(aucErlo_filt$cell_line, levels=order_reactive())
   
   
-  mec_auc=melt(aucErlo_filt, id.vars="cell_line", measure=colnames(aucErlo_filt[,-1]))
+  mec_auc=melt(aucErlo_filt, id.vars="cell_line", measure=colnames(aucErlo_filt[,-1,drop=F]))
   erlo_scatter <- ggplot(mec_auc, aes(x=cell_line, y=value)) +
     geom_point(aes(colour=factor(variable))) +
     theme(axis.text.x = element_text(angle = 90, hjust = 1),

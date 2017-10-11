@@ -10,17 +10,19 @@ egfrexp_filt = expEgfr[expEgfr$cellline %in% duox_order,]
 egfr_order = egfrexp_filt$cellline[c(order(egfrexp_filt$median_egfr))]
 aucerlo_study = auc_erlo[auc_erlo$cell_line %in% duox_order,]
 med=apply(aucerlo_study[,c(2:ncol(aucerlo_study))], 1, medianWithoutNA)
-sens_order= aucerlo_study$cell_line[c(order(med))]
+#sens_order= aucerlo_study$cell_line[c(order(med))]
 
 # Trying to input reactivity basedon observation. Getting an error with this step `aucErlo_filt$cell_line[order(medianSens)])`. 
 # Error is something like Error in order: unused argument (medianSens)
 # Fixed above by just sorting by median of all sensitivities combined and not the study filtered median
-# sens_order <- reactive({
-#   aucErlo_filt = aucerlo_study[,append(c("cell_line"), input$celllines)]
-#   medianSens = apply(aucErlo_filt[,c(2:ncol(aucErlo_filt))], 1, medianWithoutNA)
-#   print(c(aucErlo_filt$cell_line[order(medianSens)]))
-# })
-# sens_order <- reactiveValues(data = NULL)
+sens_order <-reactive({
+  aucErlo_filt = aucerlo_study[,append(c("cell_line"), input$celllines)]
+  medianSens = apply(aucErlo_filt[,c(2:ncol(aucErlo_filt))], 1, medianWithoutNA)
+  neworder = c(aucErlo_filt$cell_line[order(medianSens)])
+  neworder
+  print(neworder)
+})
+#sens_order <- reactiveValues(data = NULL)
 # 
 # 
 # observeEvent(input$celllines, {
@@ -36,18 +38,18 @@ sens_order= aucerlo_study$cell_line[c(order(med))]
 #   })
 
 #Ordering
-order <- reactive({
+order_reactive <- reactive({
   switch(input$SortByGeneExp,
                  egfr = egfr_order,
                  duox = duox_order,
-                 medianSensitivity= sens_order)
+                 medianSensitivity= sens_order())
   })
   
 
 
 output$heatmap <- renderPlot({
-  duoxexp_filt$cellline = factor(duoxexp_filt$cellline, levels=order())
-  egfrexp_filt$cellline = factor(egfrexp_filt$cellline, levels=order())
+  duoxexp_filt$cellline = factor(duoxexp_filt$cellline, levels=order_reactive())
+  egfrexp_filt$cellline = factor(egfrexp_filt$cellline, levels=order_reactive())
   mel=melt(duoxexp_filt[,c(1:4)], id.vars="cellline", measure=c("GRAY","UHN","CCLE"))
   mel$value[which(mel$value<1e-10)]=1e-10
   mee <- melt(egfrexp_filt[,c(1:4)], id.vars="cellline", measure=c("GRAY","UHN","CCLE"))
@@ -93,7 +95,7 @@ output$heatmap <- renderPlot({
 
 output$scatter <- renderPlot({
   aucErlo_filt = aucerlo_study[,append(c("cell_line"), input$celllines)]
-  aucErlo_filt$cell_line = factor(aucErlo_filt$cell_line, levels=order())
+  aucErlo_filt$cell_line = factor(aucErlo_filt$cell_line, levels=order_reactive())
   
   
   mec_auc=melt(aucErlo_filt, id.vars="cell_line", measure=colnames(aucErlo_filt[,-1]))
